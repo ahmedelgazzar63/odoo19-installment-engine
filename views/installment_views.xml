@@ -66,6 +66,8 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,open,paid"/>
                 </header>
                 <sheet>
+                    <widget name="web_ribbon" title="paid" bg_color="text-bg-success" invisible="state != 'paid'"/>
+                    
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_invoice" type="object" class="oe_stat_button" icon="fa-pencil-square-o"
                                 invisible="not invoice_id" groups="installment.group_installment_manager">
