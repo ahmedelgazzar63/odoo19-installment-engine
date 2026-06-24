@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_installment_installment_tree" model="ir.ui.view">
+        <field name="name">installment.installment.list</field>
+        <field name="model">installment.installment</field>
+        <field name="arch" type="xml">
+            <list string="Installments">
+                <field name="name"/>
+                <field name="reference"/>
+                <field name="customer_id"/>
+                <field name="date"/>
+                <field name="amount" sum="Total Amount"/>
+                <field name="paid_amount" sum="Total Paid"/>
+                <field name="remaining_amount" sum="Total Remaining"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'open'" decoration-success="state == 'paid'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_installment_installment_kanban" model="ir.ui.view">
+        <field name="name">installment.installment.kanban</field>
+        <field name="model">installment.installment</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state">
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="amount"/>
+                <field name="date"/>
+                <field name="state"/>
+
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex flex-column gap-1 w-100">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <strong class="fw-bolder text-truncate">
+                                    <field name="name"/>
+                                </strong>
+                            </div>
+
+                            <div class="text-muted small">
+                                <strong>Customer:</strong> <field name="customer_id"/>
+                            </div>
+                            <div class="text-muted small">
+                                <strong>Amount:</strong> <field name="amount"/>
+                            </div>
+                            <div class="text-muted small">
+                                <strong>Date:</strong> <field name="date"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_installment_installment_form" model="ir.ui.view">
+        <field name="name">installment.installment.form</field>
+        <field name="model">installment.installment</field>
+        <field name="arch" type="xml">
+            <form string="Installment">
+                <header>
+                    <button name="action_open" string="Open" type="object" invisible="state != 'draft'" class="oe_highlight"/>
+                    <button name="%(action_installment_payment_wizard)d" string="Payment" type="action" invisible="state != 'open'" class="oe_highlight"/>
+                    <button name="action_settle" string="Settlement" type="object" invisible="state != 'open'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,open,paid"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="paid" bg_color="text-bg-success" invisible="state != 'paid'"/>
+
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_invoice" type="object" class="oe_stat_button" icon="fa-pencil-square-o"
+                                invisible="not invoice_id" groups="installment.group_installment_manager">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Invoice</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="customer_id" readonly="state != 'draft'"/>
+                            <field name="reference" readonly="state != 'draft'"/>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="invoice_id"/>
+                        </group>
+                        <group>
+                            <field name="journal_id" readonly="state != 'draft'"/>
+                            <field name="account_id" readonly="state != 'draft'"/>
+                            <field name="analytic_distribution" widget="analytic_distribution" groups="analytic.group_analytic_accounting" readonly="state != 'draft'"/>
+                            <field name="amount" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Payments Received" name="payments_tab">
+                            <field name="payment_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="journal_id"/>
+                                    <field name="amount"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="paid_amount"/>
+                                <field name="remaining_amount" class="oe_subtotal_footer_separator"/>
+                            </group>
+                        </page>
+                        <page string="Notes" name="notes_tab">
+                            <field name="notes" placeholder="Internal remarks..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_installment_installment_search" model="ir.ui.view">
+        <field name="name">installment.installment.search</field>
+        <field name="model">installment.installment</field>
+        <field name="arch" type="xml">
+            <search string="Search Installments">
+                <field name="name"/>
+                <field name="reference"/>
+                <field name="customer_id"/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Open" name="open" domain="[('state', '=', 'open')]"/>
+                <filter string="Paid" name="paid" domain="[('state', '=', 'paid')]"/>
+                <group>
+                    <filter string="Customer" name="group_by_customer" context="{'group_by': 'customer_id'}"/>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_installment_installment_pivot">
+        <field name="name">installment.installment.pivot</field>
+        <field name="model">installment.installment</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="state" type="row"/>
+                <field name="paid_amount" type="measure"/>
+                <field name="remaining_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="view_installment_installment_graph">
+        <field name="name">installment.installment.graph</field>
+        <field name="model">installment.installment</field>
+        <field name="arch" type="xml">
+            <graph>
+                <field name="state"/>
+                <field name="paid_amount"/>
+                <field name="remaining_amount"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_installment_installment" model="ir.actions.act_window">
+        <field name="name">Customer Installments</field>
+        <field name="res_model">installment.installment</field>
+        <field name="view_mode">list,kanban,form,graph,pivot</field>
+    </record>
+
+    <menuitem id="menu_installment_root"
+              name="Installments"
+              web_icon="base,static/description/icon.png"
+              sequence="10"/>
+
+    <menuitem id="menu_customer_installment"
+              name="Customer Installments"
+              parent="menu_installment_root"
+              action="action_installment_installment"
+              sequence="10"/>
+
+</odoo>
